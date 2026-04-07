@@ -40,21 +40,21 @@ class App:
         # Read message (minus the new line at the end)
         message = self.input_box.get("1.0", "end-1c")
 
+        # Send message to server
+        self.sock.send(message.encode())
+
         # Clear message
         self.input_box.delete("1.0", "end")
 
     def read_socket(self):
-        host = '127.0.0.1'  # Or "localhost"
-        port = 5000  # Replace with your port
-
         try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((host, port))
-                while self.running:
-                    data = s.recv(1024)
-                    if not data:
-                        break
-                    self.data_queue.put(data.decode())
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.sock.connect(('127.0.0.1', 5000))
+            while self.running:
+                data = self.sock.recv(1024)
+                if not data:
+                    break
+                self.data_queue.put(data.decode())
         except Exception as e:
             self.data_queue.put(f"Error: {e}")
 
