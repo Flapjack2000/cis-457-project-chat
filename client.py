@@ -21,7 +21,7 @@ class App:
 
     def build_gui(self):
         # Chat display
-        self.chat_display = scrolledtext.ScrolledText(self.window, state='disabled', height=20)
+        self.chat_display = scrolledtext.ScrolledText(self.window, height=20)
         self.chat_display.pack(padx=10, pady=10, fill="both", expand=True)
 
         # Frame to hold message input box and send button on same row
@@ -61,6 +61,7 @@ class App:
     def update_gui(self):
         try:
             data = self.data_queue.get_nowait()
+            self.chat_display.insert("end", data)
         except queue.Empty:
             pass  # No data yet, ignore
         if self.running:
