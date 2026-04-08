@@ -1,5 +1,4 @@
 import tkinter as tk
-from ctypes.wintypes import tagMSG
 from tkinter import scrolledtext, simpledialog
 import threading
 import socket
