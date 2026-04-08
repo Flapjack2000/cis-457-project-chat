@@ -10,7 +10,7 @@ server_sock.listen()
 
 def handle_client(sock):
     # Receive username from client and store in clients dict
-    username = sock.recv(1024)
+    username = sock.recv(1024).decode()
     clients[username] = sock
 
     # Announce to everyone that the new user has joined
@@ -32,6 +32,7 @@ while True:
     try:
         sock, addr = server_sock.accept()
         t = threading.Thread(target=handle_client, args=(sock,))
+        t.start()
 
     except KeyboardInterrupt:
         break
