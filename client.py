@@ -24,7 +24,7 @@ class App:
                 self.username = simpledialog.askstring("Username", prompt)
 
                 if self.username is None:
-                    self.window.destroy()
+                    self.close()
                     return
 
                 # Handle blank usernames
@@ -57,7 +57,7 @@ class App:
 
         # Catch disconnection
         except ConnectionResetError:
-            self.window.destroy()
+            self.close()
             return
 
         # Show main chat window after username is good
@@ -136,6 +136,7 @@ class App:
 
     def close(self):
         self.running = False
+        self.sock.close()
         self.window.destroy()
 
 
