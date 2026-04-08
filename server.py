@@ -13,6 +13,15 @@ def handle_client(sock):
     username = sock.recv(1024)
     clients[username] = sock
 
+    # Announce to everyone that the new user has joined
+    for key in clients:
+        if key != username:
+            message = f"{username} has joined the chat!"
+            clients[key].send(message.encode())
+        else:
+            message = f"Welcome {username}!"
+            clients[key].send(message.encode())
+
     # Close socket
     clients[username].close()
 
