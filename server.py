@@ -9,9 +9,15 @@ server_sock.bind(('', 5000))
 server_sock.listen()
 
 def handle_client(sock):
-    # Receive username from client and store in clients dict
-    username = sock.recv(1024).decode()
-    clients[username] = sock
+    # Receive username from client
+    while True:
+        username = sock.recv(1024).decode()
+        if username in clients:
+            sock.send("__taken__".encode())
+        else:
+            sock.send("__ok__".encode())
+            clients[username] = sock
+            break
 
     # Announce to everyone that the new user has joined
     for key in clients:
@@ -24,31 +30,39 @@ def handle_client(sock):
 
     # Continuously pass messages to other clients
     while True:
-        # Receive data from client
-        message = sock.recv(1024).decode()
+        try:
+            # Receive data from client
+            message = sock.recv(1024).decode()
 
-        # Handle quit
-        if message == "quit":
+            # Handle quit
+            if message == "quit":
 
-            # Quit message
-            for key in clients:
-                if key != username:
-                    message = f"{username} has left the chat!\n"
-                    clients[key].send(message.encode())
+                # Quit announcement
+                for key in clients:
+                    if key != username:
+                        message = f"{username} has left the chat!\n"
+                        clients[key].send(message.encode())
 
-            # Escape loop to end thread
+                # Escape loop to end thread
+                break
+
+            # Pass along message
+            else:
+                for key in clients:
+                    if key != username:
+                        clients[key].send(f"{username}: {message}\n".encode())
+
+        # Catch when clients disconnect
+        except ConnectionResetError as e:
+            print(e)
             break
-
-        # Pass along message
-        else:
-            for key in clients:
-                clients[key].send(f"{username}: {message}\n".encode())
 
     # Close socket
     clients[username].close()
 
     # Remove client from dict
     del clients[username]
+    print(username + " has left the chat!")
 
 while True:
     try:
