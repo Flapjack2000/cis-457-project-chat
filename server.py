@@ -1,6 +1,7 @@
 import socket
 import threading
 
+# Store sockets by unique username
 clients: dict[str, socket.socket] = {}
 
 # Bind to port 5000
@@ -19,11 +20,13 @@ def handle_client(sock):
             clients[username] = sock
             break
 
-    # Announce to everyone that the new user has joined
     for key in clients:
+        # Announce to everyone else that the new user has joined
         if key != username:
             message = f"{username} has joined the chat!\n"
             clients[key].send(message.encode())
+
+        # Welcome new client
         else:
             message = f"Welcome {username}!\n"
             clients[key].send(message.encode())
@@ -36,25 +39,36 @@ def handle_client(sock):
 
             # Handle quit
             if message == "quit":
-
-                # Quit announcement
-                for key in clients:
-                    if key != username:
-                        message = f"{username} has left the chat!\n"
-                        clients[key].send(message.encode())
-
-                # Escape loop to end thread
-                break
+                # Escape to quit announcement
+                raise ConnectionResetError
 
             # Pass along message
             else:
+
+                # Handle direct message
+                is_dm = False
+                first_word = message.split()[0]
+                if first_word[0] == "@":
+                    for key in clients:
+                        if key == first_word[1:]:
+                            is_dm = True
+                            clients[key].send(f"[DM from {username}] {message[1:]}".encode())
+                if is_dm:
+                    continue
+
+                # Handle group message
                 for key in clients:
                     if key != username:
-                        clients[key].send(f"{username}: {message}\n".encode())
+                        clients[key].send(f"[{username}] {message}\n".encode())
 
         # Catch when clients disconnect
-        except ConnectionResetError as e:
-            print(e)
+        except ConnectionResetError:
+
+            # Quit announcement
+            for key in clients:
+                if key != username:
+                    message = f"[{username}] has left the chat!\n"
+                    clients[key].send(message.encode())
             break
 
     # Close socket

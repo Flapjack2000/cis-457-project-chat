@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import scrolledtext, simpledialog
+from tkinter import scrolledtext, simpledialog, messagebox
 import threading
 import socket
 import queue
@@ -13,7 +13,7 @@ class App:
 
         try:
 
-            # Connect to client
+            # Connect to server at localhost:5000
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.connect(('127.0.0.1', 5000))
 
@@ -22,6 +22,7 @@ class App:
             while True:
                 self.username = simpledialog.askstring("Username", prompt)
 
+                # Weird if this happens but ensures username exists
                 if self.username is None:
                     self.close()
                     return
@@ -41,6 +42,11 @@ class App:
                     prompt = "Name cannot be more than one word. Enter your name:"
                     continue
 
+                # Handle invalid characters (require only alphanumeric)
+                if not self.username.strip().isalnum():
+                    prompt = "Name can only include alphanumeric characters. Enter your name:"
+                    continue
+
                 # Send username to server
                 self.sock.send(self.username.strip().encode())
                 response = self.sock.recv(1024).decode()
@@ -54,7 +60,7 @@ class App:
                     prompt = "That name is taken, try another:"
                     continue
 
-        # Catch disconnection
+        # Catch sudden client disconnection
         except ConnectionResetError:
             self.close()
             return
@@ -90,9 +96,9 @@ class App:
         message = self.input_box.get("1.0", "end-1c")
         if not message: return
 
-        # Display message
+        # Display sent message in green
         self.chat_display.config(state='normal')
-        self.chat_display.tag_config("green", background="green")
+        self.chat_display.tag_config("green", background="green", foreground="white")
         self.chat_display.insert("end", f"{self.username}: {message}\n", "green")
         self.chat_display.config(state='disabled')
 
@@ -109,21 +115,31 @@ class App:
                 if not data:
                     break
                 self.data_queue.put(data.decode())
-        
-        except Exception as e:
-            if self.running:
-                self.data_queue.put(f"Error: {e}")
 
+        # Catch sudden server disconnection
+        except ConnectionResetError:
+            if self.running:
+                self.data_queue.put("__disconnected__")
 
     def update_gui(self):
         try:
             # Read message
             data = self.data_queue.get_nowait()
 
-            # Insert message
+            # Handle sudden server disconnection
+            if data == "__disconnected__":
+                self.running = False
+                messagebox.showinfo("Disconnected", "The server has disconnected.")
+                self.close()
+                return # Escape before updating gui
+
+            # Insert received message
             self.chat_display.config(state='normal')
             self.chat_display.insert("end", data)
             self.chat_display.config(state='disabled')
+
+            # Auto-scroll to end
+            self.chat_display.see("end")
 
         except queue.Empty:
             pass  # No data yet, ignore
