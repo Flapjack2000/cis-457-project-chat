@@ -79,6 +79,10 @@ class App:
         self.chat_display = scrolledtext.ScrolledText(self.window, height=20, state="disabled")
         self.chat_display.pack(padx=10, pady=10, fill="both", expand=True)
 
+        # Chat message colors
+        self.chat_display.tag_config("self", background="#2e4e40", foreground="white")
+        self.chat_display.tag_config("dm", background="#4627ab", foreground="white")
+
         # Frame to hold message input box and send button on same row
         frame = tk.Frame(self.window)
         frame.pack(padx=10, pady=(0, 10), fill='x')
@@ -96,10 +100,9 @@ class App:
         message = self.input_box.get("1.0", "end-1c")
         if not message: return
 
-        # Display sent message in green
+        # Display sent message
         self.chat_display.config(state='normal')
-        self.chat_display.tag_config("green", background="green", foreground="white")
-        self.chat_display.insert("end", f"{self.username}: {message}\n", "green")
+        self.chat_display.insert("end", f"[{self.username}] {message}\n", "self")
         self.chat_display.config(state='disabled')
 
         # Send message to server
@@ -135,7 +138,11 @@ class App:
 
             # Insert received message
             self.chat_display.config(state='normal')
-            self.chat_display.insert("end", data)
+
+            if data[0:3] == "[DM":
+                self.chat_display.insert("end", data, "dm")
+            else:
+                self.chat_display.insert("end", data)
             self.chat_display.config(state='disabled')
 
             # Auto-scroll to end

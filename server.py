@@ -52,7 +52,7 @@ def handle_client(sock):
                     for key in clients:
                         if key == first_word[1:]:
                             is_dm = True
-                            clients[key].send(f"[DM from {username}] {message[1:]}".encode())
+                            clients[key].send(f"[DM from {username}] {message[1:]}\n".encode())
                 if is_dm:
                     continue
 
