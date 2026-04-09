@@ -54,6 +54,8 @@ class App:
                 if response == "__ok__":
                     # Good username, stop prompting
                     self.username = self.username.strip()
+                    self.sock.send("__ack__".encode())  # signal ready for welcome msg
+                    self.window.title(f"{self.username} - Group Chat")
                     break
                 elif response == "__taken__":
                     # Prompt again if server indicates that the username is taken
@@ -61,7 +63,7 @@ class App:
                     continue
 
         # Catch sudden client disconnection
-        except ConnectionResetError:
+        except (ConnectionResetError, ConnectionAbortedError):
             self.close()
             return
 
@@ -100,13 +102,18 @@ class App:
         message = self.input_box.get("1.0", "end-1c")
         if not message: return
 
-        # Display sent message
+        # Send message to server
+        self.sock.send(message.encode())
+
+        # Handle quit
+        if message.strip().lower() == "quit":
+            self.close()
+            return
+
+        # Display sent message (only if not quitting)
         self.chat_display.config(state='normal')
         self.chat_display.insert("end", f"[{self.username}] {message}\n", "self")
         self.chat_display.config(state='disabled')
-
-        # Send message to server
-        self.sock.send(message.encode())
 
         # Clear message
         self.input_box.delete("1.0", "end")
@@ -119,8 +126,8 @@ class App:
                     break
                 self.data_queue.put(data.decode())
 
-        # Catch sudden server disconnection
-        except ConnectionResetError:
+        # Catch sudden disconnection
+        except (ConnectionResetError, ConnectionAbortedError):
             if self.running:
                 self.data_queue.put("__disconnected__")
 

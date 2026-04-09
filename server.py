@@ -17,6 +17,7 @@ def handle_client(sock):
             sock.send("__taken__".encode())
         else:
             sock.send("__ok__".encode())
+            sock.recv(1024)  # wait for client ack before sending welcome
             clients[username] = sock
             break
 
@@ -52,7 +53,8 @@ def handle_client(sock):
                     for key in clients:
                         if key == first_word[1:]:
                             is_dm = True
-                            clients[key].send(f"[DM from {username}] {message[1:]}\n".encode())
+                            clients[key].send(f"[DM from {username}] {" ".join(message.split()[1:])}\n".encode())
+                            print(f"DM from {username} to {clients[key]}")
                 if is_dm:
                     continue
 
@@ -60,9 +62,10 @@ def handle_client(sock):
                 for key in clients:
                     if key != username:
                         clients[key].send(f"[{username}] {message}\n".encode())
+                print(f"[{username}] {message}\n")
 
         # Catch when clients disconnect
-        except ConnectionResetError:
+        except (ConnectionResetError, ConnectionAbortedError):
 
             # Quit announcement
             for key in clients:
