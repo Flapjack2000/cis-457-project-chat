@@ -38,7 +38,7 @@ def handle_client(sock):
             message = sock.recv(1024).decode()
 
             # Handle quit
-            if message == "quit":
+            if message == "quit" or message == "":
                 # Escape to quit announcement
                 raise ConnectionResetError
 
