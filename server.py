@@ -21,16 +21,27 @@ def handle_client(sock):
             clients[username] = sock
             break
 
+    # Announce to everyone else that the new user has joined
+    other_names = []
     for key in clients:
-        # Announce to everyone else that the new user has joined
         if key != username:
             message = f"{username} has joined the chat!\n"
             clients[key].send(message.encode())
+            other_names.append(key)
 
-        # Welcome new client
+    # Welcome new client
+    message = f"Welcome {username}!\n"
+    if len(other_names) > 0:
+        if len(other_names) == 1:
+            message += f"{other_names[0]} is also here!\n"
         else:
-            message = f"Welcome {username}!\n"
-            clients[key].send(message.encode())
+            message += f"{', '.join(other_names[:-1])} and {other_names[-1]} are also here!\n"
+    else:
+        message += f"You are the only one here!\n"
+    clients[username].send(message.encode())
+
+    # Log new user
+    print(f"{username} has joined the chat!")
 
     # Continuously pass messages to other clients
     while True:
@@ -54,7 +65,9 @@ def handle_client(sock):
                         if key == first_word[1:]:
                             is_dm = True
                             clients[key].send(f"[DM from {username}] {" ".join(message.split()[1:])}\n".encode())
-                            print(f"DM from {username} to {clients[key]}")
+
+                            # Log DM
+                            print(f"[DM from {username} to {clients[key]}] {" ".join(message.split()[1:])}")
                 if is_dm:
                     continue
 
@@ -62,7 +75,9 @@ def handle_client(sock):
                 for key in clients:
                     if key != username:
                         clients[key].send(f"[{username}] {message}\n".encode())
-                print(f"[{username}] {message}\n")
+
+                # Log group message
+                print(f"[{username}] {message}")
 
         # Catch when clients disconnect
         except (ConnectionResetError, ConnectionAbortedError):
@@ -79,6 +94,8 @@ def handle_client(sock):
 
     # Remove client from dict
     del clients[username]
+
+    # Log user quit
     print(username + " has left the chat!")
 
 while True:
